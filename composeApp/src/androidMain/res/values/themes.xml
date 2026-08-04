@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Deliberately bare. The splash background matches CurioColors.surface so
+        launch reads as one continuous surface rather than a white flash into
+        warm paper. Update both together if the palette changes.
+    -->
+    <style name="Theme.Curio" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/curio_surface</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+</resources>

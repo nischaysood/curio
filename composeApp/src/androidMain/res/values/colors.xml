@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Mirrors CurioColors.surface (light). Keep in sync with Theme.kt. -->
+    <color name="curio_surface">#FAF6F0</color>
+</resources>

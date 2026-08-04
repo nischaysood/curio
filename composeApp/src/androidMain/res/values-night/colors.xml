@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Mirrors CurioColors.surface (dark). Dark mode is day one, including launch. -->
+    <color name="curio_surface">#16130F</color>
+</resources>

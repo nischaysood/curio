@@ -1,0 +1,15 @@
+*.iml
+.gradle/
+.kotlin/
+build/
+captures/
+local.properties
+.idea/
+.DS_Store
+xcuserdata/
+*.hprof
+
+# Never commit an API key. The Aug 15 paid key goes in local.properties,
+# which is gitignored above, and is read at build time.
+secrets.properties
+.env
