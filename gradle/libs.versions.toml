@@ -1,3 +1,17 @@
+# ---------------------------------------------------------------------------
+# PINNED ON PURPOSE. Do not let the IDE talk you into upgrading before Sept 30.
+#
+# AGP 9.0 removed support for applying `com.android.application` to a Kotlin
+# Multiplatform module — it requires migrating to the Android-KMP plugin. That
+# migration is a day of work and it buys this project nothing before the deadline.
+# Android Studio 2026.x will offer the upgrade on every sync. Say no.
+#
+# This trio is mutually compatible and known-good:
+#   AGP 8.7.3  +  Kotlin 2.1.0  +  Compose Multiplatform 1.7.3  +  Gradle 8.11.1
+#
+# Revisit after Sept 30, not before.
+# ---------------------------------------------------------------------------
+
 [versions]
 agp = "8.7.3"
 android-compileSdk = "35"

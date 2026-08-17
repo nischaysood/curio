@@ -35,8 +35,12 @@ import app.curio.domain.Lesson
 import app.curio.platform.Haptic
 import app.curio.platform.Haptics
 import app.curio.platform.rememberHaptics
+import app.curio.ui.components.MatchPairsExercise
 import app.curio.ui.components.MultipleChoiceExercise
+import app.curio.ui.components.ReorderExercise
+import app.curio.ui.components.SortBucketsExercise
 import app.curio.ui.components.TapToFillExercise
+import app.curio.ui.components.TeachBackExercise
 import app.curio.ui.cue.Cue
 import app.curio.ui.cue.CueState
 import app.curio.ui.theme.CurioTheme
@@ -148,45 +152,38 @@ fun LessonScreen(
 }
 
 /**
- * The one `when` over Exercise. Adding a seventh type is one composable plus one
- * branch here — and the compiler will point at this file until you add it.
+ * The one `when` over Exercise, and it is exhaustive — no `else` branch on
+ * purpose. Adding a seventh type is one composable plus one branch here, and
+ * until you add it the compiler will refuse to build and point at this file.
+ * That is the whole benefit of the sealed interface; an `else` would throw it away.
  */
 @Composable
 private fun ExerciseHost(
     exercise: Exercise,
     haptics: Haptics,
     onResult: (Boolean) -> Unit,
-    @Suppress("UNUSED_PARAMETER") onListening: (Float) -> Unit,
+    onListening: (Float) -> Unit,
 ) {
+    // Named `onResult =` on purpose, NOT a trailing lambda: `modifier` is the last
+    // parameter on every exercise composable (Compose convention), so a trailing
+    // lambda would bind to the wrong one and fail to compile.
     when (exercise) {
-        is Exercise.MultipleChoice -> MultipleChoiceExercise(exercise, haptics) { onResult(it) }
-        is Exercise.TapToFill -> TapToFillExercise(exercise, haptics) { onResult(it) }
-
-        // TODO Aug 10-12: Reorder, MatchPairs, SortBuckets, TeachBack.
-        // Placeholders keep the player playable end-to-end while the remaining
-        // four types land, rather than blocking the whole screen on them.
-        else -> NotYetBuilt(exercise, onResult)
-    }
-}
-
-@Composable
-private fun NotYetBuilt(exercise: Exercise, onResult: (Boolean) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(CurioTheme.space.md)) {
-        Text(
-            text = exercise.prompt,
-            style = CurioTheme.type.prompt,
-            color = CurioTheme.colors.onSurface,
+        is Exercise.MultipleChoice ->
+            MultipleChoiceExercise(exercise, haptics, onResult = { onResult(it) })
+        is Exercise.TapToFill ->
+            TapToFillExercise(exercise, haptics, onResult = { onResult(it) })
+        is Exercise.MatchPairs ->
+            MatchPairsExercise(exercise, haptics, onResult = { onResult(it) })
+        is Exercise.Reorder ->
+            ReorderExercise(exercise, haptics, onResult = { onResult(it) })
+        is Exercise.SortBuckets ->
+            SortBucketsExercise(exercise, haptics, onResult = { onResult(it) })
+        is Exercise.TeachBack -> TeachBackExercise(
+            exercise = exercise,
+            haptics = haptics,
+            onResult = { onResult(it) },
+            onTypingChanged = onListening,
         )
-        Text(
-            text = "This exercise type is not built yet — tap to continue.",
-            style = CurioTheme.type.label,
-            color = CurioTheme.colors.onSurfaceMuted,
-            modifier = Modifier.fillMaxWidth().padding(top = CurioTheme.space.lg),
-        )
-    }
-    LaunchedEffect(exercise.id) {
-        delay(1200)
-        onResult(true)
     }
 }
 
