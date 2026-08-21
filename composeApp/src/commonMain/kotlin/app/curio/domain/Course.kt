@@ -55,6 +55,17 @@ data class Lesson(
     val position: Int,
     val exercises: List<Exercise>,
     val state: LessonState = LessonState.LOCKED,
+    /**
+     * Shown BEFORE the first exercise.
+     *
+     * You cannot retrieve what you never encountered. Curio's thesis is that
+     * exercises beat walls of text — not that exposition is unnecessary. This is
+     * the smallest amount of teaching that makes the exercises answerable:
+     * one paragraph and a handful of key ideas, sourced from the same chunks the
+     * exercises came from, so the two can never drift apart.
+     */
+    val summary: String = "",
+    val keyIdeas: List<String> = emptyList(),
 ) {
     /** Rough minutes. Used only for the "10-15 min" label on the path node. */
     val estimatedMinutes: Int get() = (exercises.size * 1.8f).toInt().coerceAtLeast(5)

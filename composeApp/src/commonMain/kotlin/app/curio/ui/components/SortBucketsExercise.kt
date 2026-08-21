@@ -244,7 +244,7 @@ private fun Chip(
         modifier = Modifier
             .scale(lift)
             .alpha(if (enabled) 1f else 0.9f)
-            .defaultMinSize(minHeight = 40.dp)
+            .defaultMinSize(minHeight = space.touchTarget)
             .clip(shape)
             .background(background, shape)
             .border(1.5.dp, outline, shape)

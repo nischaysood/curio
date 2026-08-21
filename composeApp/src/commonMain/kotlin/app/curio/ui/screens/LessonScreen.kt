@@ -11,12 +11,16 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -35,12 +39,14 @@ import app.curio.domain.Lesson
 import app.curio.platform.Haptic
 import app.curio.platform.Haptics
 import app.curio.platform.rememberHaptics
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import app.curio.ui.components.MatchPairsExercise
 import app.curio.ui.components.MultipleChoiceExercise
 import app.curio.ui.components.ReorderExercise
 import app.curio.ui.components.SortBucketsExercise
 import app.curio.ui.components.TapToFillExercise
 import app.curio.ui.components.TeachBackExercise
+import app.curio.ui.components.tappable
 import app.curio.ui.cue.Cue
 import app.curio.ui.cue.CueState
 import app.curio.ui.theme.CurioTheme
@@ -58,6 +64,7 @@ import kotlinx.coroutines.delay
 fun LessonScreen(
     lesson: Lesson,
     onComplete: (correctCount: Int) -> Unit,
+    onExit: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = CurioTheme.colors
@@ -65,12 +72,17 @@ fun LessonScreen(
     val motion = CurioTheme.motion
     val haptics = rememberHaptics()
 
+    // Teaching first. You cannot retrieve what you were never shown, so the
+    // intro is not optional chrome — it's what makes the exercises answerable.
+    var showIntro by remember(lesson.id) {
+        mutableStateOf(lesson.summary.isNotBlank() || lesson.keyIdeas.isNotEmpty())
+    }
     var index by remember(lesson.id) { mutableIntStateOf(0) }
     var correctCount by remember(lesson.id) { mutableIntStateOf(0) }
     var cue by remember(lesson.id) { mutableStateOf<CueState>(CueState.Idle) }
     var advancing by remember(lesson.id) { mutableStateOf(false) }
 
-    val finished = index >= lesson.exercises.size
+    val finished = !showIntro && index >= lesson.exercises.size
 
     // One place that owns "an answer happened". Every exercise type funnels here,
     // so adding type seven changes nothing about pacing, Cue, or progress.
@@ -108,6 +120,9 @@ fun LessonScreen(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(space.md),
         ) {
+            // Visible way out. The system back gesture also works on Android, but
+            // a gesture that not every platform has can't be the only exit.
+            ExitButton(onTap = onExit)
             ProgressBar(
                 progress = index.toFloat() / lesson.exercises.size.coerceAtLeast(1),
                 modifier = Modifier.weight(1f),
@@ -116,7 +131,9 @@ fun LessonScreen(
         }
 
         Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-            if (finished) {
+            if (showIntro) {
+                LessonIntro(lesson = lesson, onStart = { showIntro = false })
+            } else if (finished) {
                 Text(
                     text = "$correctCount / ${lesson.exercises.size}",
                     style = CurioTheme.type.display,
@@ -136,14 +153,29 @@ fun LessonScreen(
                 ) { i ->
                     val exercise = lesson.exercises.getOrNull(i)
                     if (exercise != null) {
-                        ExerciseHost(
-                            exercise = exercise,
-                            onResult = ::onAnswer,
-                            haptics = haptics,
-                            onListening = { intensity ->
-                                cue = if (intensity > 0f) CueState.Listening(intensity) else CueState.Idle
-                            },
-                        )
+                        // Every exercise scrolls. Reorder and SortBuckets are
+                        // taller than a small phone viewport, and an exercise you
+                        // physically cannot finish is worse than a missing one.
+                        // Fresh scroll state per exercise so a new page starts
+                        // at the top rather than inheriting the last one's offset.
+                        Column(
+                            Modifier
+                                .fillMaxSize()
+                                .verticalScroll(rememberScrollState())
+                                .padding(vertical = space.md),
+                        ) {
+                            ExerciseHost(
+                                exercise = exercise,
+                                onResult = ::onAnswer,
+                                haptics = haptics,
+                                onListening = { intensity ->
+                                    cue = if (intensity > 0f) CueState.Listening(intensity) else CueState.Idle
+                                },
+                            )
+                            // Breathing room so the last tile isn't flush against
+                            // the bottom edge, which reads as clipped content.
+                            Spacer(Modifier.height(space.xxl))
+                        }
                     }
                 }
             }
@@ -183,6 +215,33 @@ private fun ExerciseHost(
             haptics = haptics,
             onResult = { onResult(it) },
             onTypingChanged = onListening,
+        )
+    }
+}
+
+/**
+ * Leaving mid-lesson is normal, not failure — people get interrupted. No
+ * "are you sure?" dialog, no guilt. Progress within the lesson is lost for now;
+ * persisting it is a later job.
+ */
+@Composable
+private fun ExitButton(onTap: () -> Unit) {
+    val colors = CurioTheme.colors
+    val interaction = remember { MutableInteractionSource() }
+    val shape = RoundedCornerShape(CurioTheme.radii.pill)
+
+    Box(
+        Modifier
+            .size(CurioTheme.space.touchTarget)
+            .clip(shape)
+            .background(colors.surfaceRaised, shape)
+            .tappable(interactionSource = interaction, onClick = onTap),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = "✕",
+            style = CurioTheme.type.tile,
+            color = colors.onSurfaceMuted,
         )
     }
 }

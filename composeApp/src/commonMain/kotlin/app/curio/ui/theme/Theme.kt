@@ -119,11 +119,21 @@ private val DarkColors = CurioColors(
 /**
  * Type carries identity. One display face, one text face.
  *
- * TODO(week 1, before any screen is polished): drop the chosen faces into
- * composeResources/font/ and replace these two values. Everything downstream
- * reads from here, so it is a two-line change.
- * Shortlist worth auditioning: Fraunces / Instrument Serif (display) with
- * Inter Tight / Geist (text).
+ * These are still the SYSTEM faces, and that is why the app currently looks
+ * generic — the system serif is the same one every unstyled Android app gets.
+ * Swapping them is the largest single visual improvement available and it costs
+ * about ten minutes:
+ *
+ *   1. Download two variable fonts (SIL Open Font License, safe to ship):
+ *        display — Fraunces or Instrument Serif   fonts.google.com
+ *        text    — Inter Tight or Figtree
+ *   2. Drop the .ttf files in:
+ *        composeApp/src/commonMain/composeResources/font/
+ *   3. Replace the two values below with:
+ *        FontFamily(Font(Res.font.fraunces_variable))
+ *      importing curio.composeapp.generated.resources.Res
+ *
+ * Everything downstream reads from this file, so nothing else changes.
  */
 private val DisplayFace = FontFamily.Serif
 private val TextFace = FontFamily.SansSerif
@@ -142,12 +152,15 @@ data class CurioTypography(
 )
 
 private val DefaultTypography = CurioTypography(
+    // 30/38 rather than 34/40: at 34sp a two-line serif heading crowds whatever
+    // sits under it on a 5" screen, and the app's first screen is exactly that
+    // case. Looser leading buys more than the extra 4sp of size did.
     display = TextStyle(
         fontFamily = DisplayFace,
         fontWeight = FontWeight.Normal,
-        fontSize = 34.sp,
-        lineHeight = 40.sp,
-        letterSpacing = (-0.4).sp,
+        fontSize = 30.sp,
+        lineHeight = 38.sp,
+        letterSpacing = (-0.3).sp,
     ),
     title = TextStyle(
         fontFamily = DisplayFace,

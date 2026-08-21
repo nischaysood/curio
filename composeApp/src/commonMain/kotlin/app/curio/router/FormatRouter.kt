@@ -141,8 +141,21 @@ object FormatRouter {
 
         val ordered = exercises + teachBack
 
+        // Teaching material, pulled from the same chunks the exercises came from.
+        // Definitions carry the terms; the conceptual chunk carries the framing.
+        // Sourcing both from one place means the intro can never teach something
+        // the exercises don't test, or vice versa.
+        val definitionIdeas = source.chunks
+            .filterIsInstance<Chunk.Definition>()
+            .map { it.content }
+        val keyIdeas = (teachBackChunk?.keyPoints.orEmpty() + definitionIdeas)
+            .distinct()
+            .take(5)
+
         return RoutingResult(
             lesson = Lesson(
+                summary = teachBackChunk?.content.orEmpty(),
+                keyIdeas = keyIdeas,
                 id = lessonId,
                 title = source.lesson,
                 objective = source.objective,

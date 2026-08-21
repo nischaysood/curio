@@ -137,6 +137,36 @@ never push it into tomorrow.** Slipped work compounds; cut work doesn't.
 
 ---
 
+## After the MVP — the full-stack version
+
+The direction: accounts, a database of your past courses, credits, and genuine
+"type anything and learn it". Sequenced by what actually unlocks product value.
+
+| # | Thing | Effort | Why this order |
+|---|---|---|---|
+| 1 | **Generation** — Worker + Gemini + KV cache | ~4 hrs | This IS the promise. Everything below is convenience; this is the product. Ship it before anything else. |
+| 2 | **Persistence** — progress, streaks, course history on device | ~2 hrs | Makes the app feel real. No server needed. |
+| 3 | **Anonymous → account** | ~4 hrs | Anonymous by default (already the plan). Offer an account at the paywall so a reinstall doesn't wipe 30 days of streak. |
+| 4 | **Server-side course library** | ~6 hrs | Sync courses across devices. Only worth it once accounts exist. |
+| 5 | **Credits** | ~4 hrs | See the fork below. |
+
+### The credits fork — decide before configuring Play products
+
+| | Subscription (PRD's original plan) | Credits (consumable IAP) |
+|---|---|---|
+| Revenue | Predictable, compounds | Lumpy, re-sell every time |
+| Fits | Unlimited learning, daily habit | Occasional heavy generation |
+| RevenueCat | Entitlements — the simple path | Consumables + a server-side balance you must not lose |
+| Cost alignment | Poor — a heavy user costs you more than they pay | Good — generation cost maps to credits spent |
+| Play setup | Two products | Several tiers, plus refund and restore handling |
+
+**Leaning subscription**, because the cache is what makes generation nearly free
+after the first user — which is the entire HAMM writeup. Credits price a marginal
+cost that the architecture is specifically designed to eliminate.
+
+Whichever you pick: choose it BEFORE creating Play Console products. Switching
+afterwards means redoing the store side and any paywall you've already built.
+
 ## Every day, non-negotiable
 
 **#BuildInPublic post — 10 minutes.** Largest single prize in the hackathon ($30k),
