@@ -5,6 +5,10 @@
          Everything else uses View.performHapticFeedback, which needs no permission. -->
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <!-- Course generation. The app works fully without it — bundled courses are
+         checked first and answer offline — so this is for unknown topics only. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:label="Curio"
         android:icon="@android:drawable/sym_def_app_icon"

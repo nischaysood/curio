@@ -1,0 +1,16 @@
+name = "curio-api"
+main = "src/index.js"
+compatibility_date = "2026-08-01"
+
+# The cache IS the architecture. 90-day TTL because a course on Big-O doesn't
+# go stale — and every hit is a generation you didn't pay for.
+[[kv_namespaces]]
+binding = "COURSES"
+id = "4832f560f17848ae8b07fd9ec396cdff"
+
+# GEMINI_API_KEY is a SECRET, never a var. Set it with:
+#   npx wrangler secret put GEMINI_API_KEY
+# Do not put it here — this file is committed.
+
+[observability]
+enabled = true

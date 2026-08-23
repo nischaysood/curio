@@ -25,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,6 +35,9 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import app.curio.data.CourseCatalog
+import app.curio.data.CourseResult
+import app.curio.data.CourseSource
+import app.curio.data.CurioConfig
 import app.curio.domain.Course
 import app.curio.domain.Depth
 import app.curio.platform.Haptic
@@ -42,6 +46,7 @@ import app.curio.ui.components.tappable
 import app.curio.ui.cue.Cue
 import app.curio.ui.cue.CueState
 import app.curio.ui.theme.CurioTheme
+import kotlinx.coroutines.launch
 
 /**
  * The front door. Type a topic, pick a depth, watch a course get built.
@@ -54,6 +59,7 @@ import app.curio.ui.theme.CurioTheme
 fun GenerateScreen(
     onCourseReady: (Course) -> Unit,
     modifier: Modifier = Modifier,
+    source: CourseSource = remember { CurioConfig.courseSource() },
 ) {
     val colors = CurioTheme.colors
     val space = CurioTheme.space
@@ -62,25 +68,45 @@ fun GenerateScreen(
     var topic by remember { mutableStateOf("") }
     var depth by remember { mutableStateOf(Depth.STANDARD) }
     var error by remember { mutableStateOf<String?>(null) }
+    var building by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
-    val ready = topic.trim().length >= 3
+    val ready = topic.trim().length >= 3 && !building
 
     fun submit() {
-        if (!ready) {
+        if (building) return
+        if (topic.trim().length < 3) {
             error = "Type something you want to learn"
             return
         }
-        val course = CourseCatalog.find(topic, depth)
-        if (course == null) {
-            // Honest failure. Pretending to generate and serving an unrelated
-            // course would be worse than admitting the library is small.
-            error = "No course for that yet. Try one below."
-            haptics.play(Haptic.INCORRECT)
-            return
-        }
         error = null
-        haptics.play(Haptic.CORRECT)
-        onCourseReady(course)
+        building = true
+        haptics.play(Haptic.TAP)
+
+        scope.launch {
+            when (val result = source.course(topic, depth)) {
+                is CourseResult.Ready -> {
+                    haptics.play(Haptic.CORRECT)
+                    onCourseReady(result.course)
+                }
+                // Honest failures, every one of them. Serving an unrelated course
+                // because we couldn't build the right one would be worse than
+                // admitting the library is small.
+                is CourseResult.NotFound -> {
+                    error = "No course for that yet. Try one below."
+                    haptics.play(Haptic.INCORRECT)
+                }
+                is CourseResult.Refused -> {
+                    error = result.reason
+                    haptics.play(Haptic.INCORRECT)
+                }
+                is CourseResult.Failed -> {
+                    error = result.message
+                    haptics.play(Haptic.INCORRECT)
+                }
+            }
+            building = false
+        }
     }
 
     Column(
@@ -95,7 +121,13 @@ fun GenerateScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(Modifier.fillMaxWidth().height(140.dp), contentAlignment = Alignment.Center) {
-            Cue(state = CueState.Idle, size = 88.dp)
+            // Cue fragments into particles while the course is being built. This
+            // is the "no spinners anywhere" rule — the wait is shown by the
+            // mascot doing something, not by a progress indicator.
+            Cue(
+                state = if (building) CueState.Thinking else CueState.Idle,
+                size = 88.dp,
+            )
         }
 
         Text(
@@ -146,7 +178,11 @@ fun GenerateScreen(
             )
         }
 
-        PrimaryButton(label = "Build my course", enabled = ready, onTap = ::submit)
+        PrimaryButton(
+            label = if (building) "Building…" else "Build my course",
+            enabled = ready,
+            onTap = ::submit,
+        )
 
         Text(
             text = "OR START WITH",

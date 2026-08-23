@@ -68,10 +68,12 @@ case "${1:-}" in
     ;;
 esac
 
-# Nothing connected? Boot the emulator rather than erroring. The emulator dies
-# whenever the Mac sleeps, and being told to re-run with a different flag every
-# time is a papercut that costs more than the two lines it takes to avoid.
-if ! adb devices | grep -qE "(device|emulator)-?.*device$"; then
+# The emulator dies whenever the Mac sleeps, and adb keeps a stale entry for it —
+# so `adb devices` lists something that no longer exists and the build gets all
+# the way to install before failing. Clear the stale state before trusting it.
+adb reconnect offline >/dev/null 2>&1 || true
+
+if ! adb devices | grep -qE "(device|emulator)-?.*\sdevice$"; then
   say "Nothing connected — starting the emulator"
   boot_emulator
 fi
