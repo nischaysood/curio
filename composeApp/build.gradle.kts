@@ -1,5 +1,5 @@
-import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -55,6 +55,7 @@ kotlin {
             implementation(libs.androidx.core.ktx)
             implementation(libs.sqldelight.android.driver)
             implementation(libs.ktor.client.okhttp)
+            implementation(libs.revenuecat.purchases)
         }
 
         iosMain.dependencies {
@@ -72,6 +73,19 @@ sqldelight {
     }
 }
 
+/**
+ * Upload-key credentials, read from local.properties (gitignored).
+ *
+ * Never hardcoded and never committed: anyone with the keystore and its password
+ * can publish an update to your app. Absent credentials fall back to debug
+ * signing so the project still builds on a fresh clone.
+ */
+val signingProps = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+val hasUploadKey = signingProps.getProperty("CURIO_KEYSTORE_FILE") != null
+
 android {
     namespace = "app.curio"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
@@ -80,7 +94,10 @@ android {
         applicationId = "app.curio"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 1
+        // Every upload to Play needs a HIGHER versionCode than the last, even a
+        // rejected one — the number is consumed on upload, not on release.
+        // Bump this before every single bundle you send.
+        versionCode = 2
         versionName = "0.1.0"
     }
 
@@ -90,9 +107,24 @@ android {
         }
     }
 
+    signingConfigs {
+        if (hasUploadKey) {
+            create("upload") {
+                storeFile = rootProject.file(signingProps.getProperty("CURIO_KEYSTORE_FILE"))
+                storePassword = signingProps.getProperty("CURIO_KEYSTORE_PASSWORD")
+                keyAlias = signingProps.getProperty("CURIO_KEY_ALIAS")
+                keyPassword = signingProps.getProperty("CURIO_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         getByName("release") {
+            // Minification off for now. R8 needs keep rules for kotlinx.serialization
+            // and Compose, and debugging a stripped release build three weeks from
+            // a deadline is not a trade worth making for a few MB.
             isMinifyEnabled = false
+            if (hasUploadKey) signingConfig = signingConfigs.getByName("upload")
         }
     }
 

@@ -2,4 +2,12 @@
 <resources>
     <!-- Mirrors CurioColors.surface (light). Keep in sync with Theme.kt. -->
     <color name="curio_surface">#FAF6F0</color>
+
+    <!--
+        Launcher icon background. Deliberately NOT curio_surface: that has a
+        -night variant, which would make the app icon change colour when the
+        system theme flips. Icons should be stable — people recognise them by
+        shape and colour, and one that moves is one you hunt for.
+    -->
+    <color name="ic_launcher_background">#FAF6F0</color>
 </resources>

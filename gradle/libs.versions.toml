@@ -14,9 +14,13 @@
 
 [versions]
 agp = "8.7.3"
-android-compileSdk = "35"
+# Play requires targetSdk 36 as of 2026 and rejects uploads below it. AGP 8.7.3
+# predates 36, so it warns that the combination is untested — suppressed in
+# gradle.properties. The alternative is upgrading AGP, which drags Kotlin and
+# Compose Multiplatform with it. Not three weeks out.
+android-compileSdk = "36"
 android-minSdk = "26"
-android-targetSdk = "35"
+android-targetSdk = "36"
 androidx-activityCompose = "1.9.3"
 androidx-core = "1.15.0"
 compose-multiplatform = "1.7.3"
@@ -25,6 +29,12 @@ kotlinx-coroutines = "1.9.0"
 kotlinx-datetime = "0.6.1"
 kotlinx-serialization = "1.7.3"
 ktor = "3.0.3"
+# Native Android SDK, not purchases-kmp. purchases-kmp 3.x requires Kotlin
+# 2.3.20+ and this project is pinned to 2.1.0 — see the note at the top of this
+# file. Upgrading Kotlin cascades into Compose Multiplatform and AGP, which is a
+# multi-day toolchain fight, not a billing integration. The iOS actual gets the
+# native iOS SDK the same way when the iOS project exists.
+revenuecat = "10.15.1"
 sqldelight = "2.0.2"
 
 [libraries]
@@ -40,6 +50,7 @@ ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "kto
 ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
 ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
 ktor-serialization-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+revenuecat-purchases = { module = "com.revenuecat.purchases:purchases", version.ref = "revenuecat" }
 sqldelight-android-driver = { module = "app.cash.sqldelight:android-driver", version.ref = "sqldelight" }
 sqldelight-native-driver = { module = "app.cash.sqldelight:native-driver", version.ref = "sqldelight" }
 sqldelight-coroutines = { module = "app.cash.sqldelight:coroutines-extensions", version.ref = "sqldelight" }

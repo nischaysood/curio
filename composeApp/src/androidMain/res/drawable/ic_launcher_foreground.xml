@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Cue, as the launcher icon.
+
+    Adaptive icons are 108x108dp with only the centre 72x72dp guaranteed visible —
+    launchers mask the rest into circles, squircles or whatever the OEM prefers.
+    So the orb sits at centre (54,54) with a radius of 22, comfortably inside the
+    safe zone at every mask shape.
+
+    Vector rather than PNG for the same reason Cue itself is procedural: one file,
+    every density, nothing to regenerate when the palette changes.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Outer glow, drawn first so the orb sits in light rather than on top of it. -->
+    <path
+        android:pathData="M54,54m-34,0a34,34 0,1 1,68 0a34,34 0,1 1,-68 0"
+        android:fillColor="#D97534"
+        android:fillAlpha="0.10" />
+    <path
+        android:pathData="M54,54m-28,0a28,28 0,1 1,56 0a28,28 0,1 1,-56 0"
+        android:fillColor="#D97534"
+        android:fillAlpha="0.18" />
+
+    <!-- The orb. -->
+    <path
+        android:pathData="M54,54m-22,0a22,22 0,1 1,44 0a22,22 0,1 1,-44 0"
+        android:fillColor="#D97534" />
+
+    <!-- Offset highlight — the same top-left light source Cue.kt draws. -->
+    <path
+        android:pathData="M46,46m-9,0a9,9 0,1 1,18 0a9,9 0,1 1,-18 0"
+        android:fillColor="#FFFDFA"
+        android:fillAlpha="0.28" />
+</vector>

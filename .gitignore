@@ -13,3 +13,10 @@ xcuserdata/
 # which is gitignored above, and is read at build time.
 secrets.properties
 .env
+
+# Upload keystore. Anyone holding this and its password can publish an update to
+# your app — and if you LOSE it you can never update the listing again, only
+# publish a new one under a different package name. Back it up somewhere that
+# isn't this laptop.
+*.jks
+*.keystore

@@ -137,6 +137,20 @@ never push it into tomorrow.** Slipped work compounds; cut work doesn't.
 
 ---
 
+## The north star
+
+**Learn anything, gamified.**
+
+The "learn anything" half is done as of Aug 23 — type any topic, get a real
+generated course. The gamified half is the post-MVP build, and it's the thing
+that turns a good demo into something people open on a Tuesday.
+
+Worth knowing: the cheap half is already in the codebase. Cue's orbit rings and
+the `STREAK` haptic exist, and `LessonState` already tracks complete vs
+needs-review. A basic streak counter is ~40 minutes on top of persistence. The
+expensive half — XP, leagues, quests, daily goals — is September and beyond, and
+should be designed against real retention numbers rather than guessed at.
+
 ## After the MVP — the full-stack version
 
 The direction: accounts, a database of your past courses, credits, and genuine
