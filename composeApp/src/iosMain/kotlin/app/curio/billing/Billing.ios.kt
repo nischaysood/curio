@@ -23,4 +23,6 @@ private object IosBilling : Billing {
     override suspend fun purchase(productId: String): PurchaseResult =
         PurchaseResult.Failed("Purchases aren't available on iOS yet.")
     override suspend fun restore(): Tier = Tier.FREE
+    override suspend fun logIn(appUserId: String): Tier = Tier.FREE
+    override suspend fun logOut() = Unit
 }

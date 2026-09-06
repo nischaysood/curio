@@ -7,7 +7,6 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinSerialization)
-    alias(libs.plugins.sqldelight)
 }
 
 kotlin {
@@ -38,7 +37,6 @@ kotlin {
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.datetime)
-            implementation(libs.sqldelight.coroutines)
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.json)
@@ -53,22 +51,12 @@ kotlin {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.core.ktx)
-            implementation(libs.sqldelight.android.driver)
             implementation(libs.ktor.client.okhttp)
             implementation(libs.revenuecat.purchases)
         }
 
         iosMain.dependencies {
-            implementation(libs.sqldelight.native.driver)
             implementation(libs.ktor.client.darwin)
-        }
-    }
-}
-
-sqldelight {
-    databases {
-        create("CurioDatabase") {
-            packageName.set("app.curio.data.db")
         }
     }
 }
@@ -97,7 +85,7 @@ android {
         // Every upload to Play needs a HIGHER versionCode than the last, even a
         // rejected one — the number is consumed on upload, not on release.
         // Bump this before every single bundle you send.
-        versionCode = 2
+        versionCode = 3
         versionName = "0.1.0"
     }
 
@@ -132,4 +120,39 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+}
+
+/**
+ * Refuse to build a release bundle that could ship a Test Store key.
+ *
+ * MainActivity already picks the key from the debuggable flag, so this should
+ * never fire. It exists because the failure it guards against is silent and
+ * expensive: an app on Play configured with a `test_` key shows a paywall,
+ * accepts a "purchase", grants the entitlement, and never charges anyone. There
+ * is no crash and no error — you find out from the revenue graph.
+ *
+ * A build that fails loudly on the machine is a better outcome than one that
+ * fails quietly in production.
+ */
+tasks.register("checkReleaseKeys") {
+    val keysFile = file("src/commonMain/kotlin/app/curio/billing/BillingKeys.kt")
+    inputs.file(keysFile)
+
+    doLast {
+        val text = keysFile.readText()
+        val androidKey = Regex("""ANDROID_API_KEY:\s*String\s*=\s*"([^"]*)"""")
+            .find(text)?.groupValues?.get(1).orEmpty()
+
+        check(androidKey.isNotBlank()) {
+            "ANDROID_API_KEY is blank — a release build would ship with billing disabled."
+        }
+        check(!androidKey.startsWith("test_")) {
+            "ANDROID_API_KEY is a Test Store key. Release builds must use the goog_ key, " +
+                "or customers will appear to pay and no money will arrive."
+        }
+    }
+}
+
+tasks.matching { it.name == "bundleRelease" || it.name == "assembleRelease" }.configureEach {
+    dependsOn("checkReleaseKeys")
 }

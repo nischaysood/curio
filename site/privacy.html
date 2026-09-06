@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy Policy — Curio</title>
+<meta name="description" content="What Curio collects, why, who it is shared with, and how to have it deleted.">
+<style>
+  :root { --surface:#FAF6F0; --raised:#FFFDFA; --outline:#E2D8CA; --ink:#1F1B16; --muted:#7A7066; --accent:#D97534; }
+  @media (prefers-color-scheme: dark) {
+    :root { --surface:#16130F; --raised:#211D18; --outline:#3A332B; --ink:#F2EBE1; --muted:#9C9186; --accent:#F08B45; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--surface); color:var(--ink);
+         font-family:"Inter Tight",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+         line-height:1.65; -webkit-font-smoothing:antialiased; }
+  .wrap { max-width:680px; margin:0 auto; padding:56px 24px 80px; }
+  h1,h2 { font-family:Fraunces,Georgia,serif; font-weight:500; letter-spacing:-0.02em; line-height:1.2; }
+  h1 { font-size:2.2rem; margin:0 0 6px; }
+  h2 { font-size:1.25rem; margin:40px 0 10px; }
+  .updated { color:var(--muted); font-size:.9rem; margin:0 0 8px; }
+  a { color:var(--accent); }
+  table { width:100%; border-collapse:collapse; margin:16px 0; font-size:.95rem; }
+  th,td { text-align:left; padding:10px; border-bottom:1px solid var(--outline); vertical-align:top; }
+  th { color:var(--muted); font-weight:600; }
+  .back { display:inline-block; margin-bottom:28px; color:var(--muted); text-decoration:none; }
+  footer { margin-top:56px; padding-top:24px; border-top:1px solid var(--outline); color:var(--muted); font-size:.9rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<a class="back" href="./">← Curio</a>
+
+<h1>Privacy Policy</h1>
+<p class="updated">Last updated 6 September 2026</p>
+
+<p>
+  Curio is a learning app. This policy describes exactly what it collects, why,
+  who else sees it, and how to have it deleted. It is written to be read rather
+  than to be defensible.
+</p>
+
+<h2>The short version</h2>
+<p>
+  Curio collects your email address if you create an account, the topics you ask
+  it to teach, and your progress through lessons. It contains no advertising, no
+  advertising identifiers, no third-party analytics, and no tracking across other
+  apps or websites. Your data is never sold.
+</p>
+
+<h2>What is collected</h2>
+
+<table>
+  <tr><th>Data</th><th>Why</th><th>When</th></tr>
+  <tr>
+    <td>Email address</td>
+    <td>To identify your account so your courses follow you to a new device</td>
+    <td>Only if you create an account</td>
+  </tr>
+  <tr>
+    <td>Password</td>
+    <td>To sign you in. Stored only as a salted PBKDF2 hash — it cannot be read back, including by us</td>
+    <td>Only if you create an account</td>
+  </tr>
+  <tr>
+    <td>Topics you type</td>
+    <td>To generate the course you asked for</td>
+    <td>Each time you request a course</td>
+  </tr>
+  <tr>
+    <td>Answers to teach-back questions</td>
+    <td>Sent for grading, then discarded — not stored against your account</td>
+    <td>When you submit a written answer</td>
+  </tr>
+  <tr>
+    <td>Lesson progress and daily counts</td>
+    <td>To restore your place, and to apply free-tier limits</td>
+    <td>Only if you create an account</td>
+  </tr>
+  <tr>
+    <td>Purchase status</td>
+    <td>To know whether you have an active subscription</td>
+    <td>Only if you subscribe</td>
+  </tr>
+</table>
+
+<p>
+  Curio does <strong>not</strong> collect your name, phone number, contacts,
+  location, photos, files, or device advertising identifier. It requests no
+  runtime permissions beyond internet access.
+</p>
+
+<h2>Using Curio without an account</h2>
+<p>
+  You can generate and complete courses without signing up. In that case no email
+  is collected and no progress is stored on our servers — the topics you request
+  are still sent to be turned into a course, but they are not linked to any
+  identity.
+</p>
+
+<h2>Who else processes your data</h2>
+<p>Curio uses a small number of services to operate. Each receives only what it needs:</p>
+
+<table>
+  <tr><th>Service</th><th>Receives</th><th>Purpose</th></tr>
+  <tr>
+    <td><a href="https://www.cloudflare.com/privacypolicy/">Cloudflare</a></td>
+    <td>Your requests, including topics</td>
+    <td>Runs the Curio API</td>
+  </tr>
+  <tr>
+    <td><a href="https://groq.com/privacy-policy/">Groq</a></td>
+    <td>The topic text and teach-back answers</td>
+    <td>Generates and grades course content</td>
+  </tr>
+  <tr>
+    <td><a href="https://neon.com/privacy-policy">Neon</a></td>
+    <td>Email, password hash, progress</td>
+    <td>Database</td>
+  </tr>
+  <tr>
+    <td><a href="https://www.revenuecat.com/privacy/">RevenueCat</a></td>
+    <td>Your Curio account identifier and purchase status</td>
+    <td>Manages subscriptions</td>
+  </tr>
+  <tr>
+    <td><a href="https://policies.google.com/privacy">Google Play Billing</a></td>
+    <td>Payment details, handled entirely by Google</td>
+    <td>Processes payment</td>
+  </tr>
+</table>
+
+<p>
+  Curio never receives your card details. Payment is handled by Google Play and
+  we see only whether a subscription is active.
+</p>
+
+<h2>Where data is stored</h2>
+<p>
+  Account data is stored in Singapore (AWS <code>ap-southeast-1</code>, via Neon).
+  Requests are processed at Cloudflare edge locations, which may be anywhere in
+  the world, including outside your country of residence.
+</p>
+
+<h2>How long it is kept</h2>
+<ul>
+  <li><strong>Account data</strong> — until you ask for deletion.</li>
+  <li><strong>Sign-in sessions</strong> — 90 days, then they expire automatically.</li>
+  <li><strong>Generated courses</strong> — cached up to 90 days and shared between users, because a course on a topic is identical for everyone. Cached courses are not linked to who requested them.</li>
+  <li><strong>Teach-back answers</strong> — not retained after grading.</li>
+</ul>
+
+<h2>Your choices</h2>
+<p>
+  You can sign out from the profile screen at any time. To have your account and
+  all associated data permanently deleted, email
+  <a href="mailto:nischay02sood@gmail.com">nischay02sood@gmail.com</a> from the
+  address on the account. Deletion is completed within 30 days and cannot be
+  undone.
+</p>
+<p>
+  Depending on where you live, you may also have the right to access, correct or
+  export your data, or to object to its processing. The same address handles
+  those requests.
+</p>
+
+<h2>Children</h2>
+<p>
+  Curio is not directed at children under 13, and accounts are not knowingly
+  created for them. If you believe a child has created an account, contact us and
+  it will be removed.
+</p>
+
+<h2>Security</h2>
+<p>
+  Traffic is encrypted in transit. Passwords are stored as salted PBKDF2-SHA256
+  hashes. Session tokens are stored only as hashes on the server, so a breach of
+  the session table would not allow anyone to sign in as you. No system is
+  perfectly secure, and we will notify affected users if a breach occurs.
+</p>
+
+<h2>Changes</h2>
+<p>
+  If this policy changes materially, the date above will be updated and the change
+  noted in the app's release notes.
+</p>
+
+<h2>Contact</h2>
+<p>
+  Curio · Nischay Sood · Panchkula, India<br>
+  <a href="mailto:nischay02sood@gmail.com">nischay02sood@gmail.com</a>
+</p>
+
+<footer>
+  <a href="./">Curio</a> · <a href="./terms.html">Terms</a>
+</footer>
+</div>
+</body>
+</html>

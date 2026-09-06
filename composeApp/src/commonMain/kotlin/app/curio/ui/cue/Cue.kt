@@ -21,7 +21,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.curio.ui.theme.CurioTheme
@@ -126,7 +125,6 @@ fun Cue(
             drawCue(
                 state = state,
                 tint = tint,
-                surface = colors.surface,
                 breath = breath,
                 spin = spin,
                 progress = progress.value,
@@ -143,7 +141,6 @@ fun Cue(
 private fun DrawScope.drawCue(
     state: CueState,
     tint: Color,
-    surface: Color,
     breath: Float,
     spin: Float,
     progress: Float,
@@ -235,23 +232,43 @@ private fun DrawScope.drawCue(
         }
     }
 
-    // --- core ---------------------------------------------------------------
-    // Scaled via the canvas so squash-stretch preserves volume properly rather
-    // than just changing the radius.
-    scale(scaleX, scaleY, core) {
-        drawCircle(
-            brush = Brush.radialGradient(
-                colors = listOf(
-                    lerpColor(tint, surface, 0.35f),
-                    tint,
-                ),
-                center = core - Offset(coreRadius * 0.3f, coreRadius * 0.35f),
-                radius = coreRadius * 1.6f,
-            ),
-            radius = coreRadius,
-            center = core,
-        )
+    // --- the raccoon --------------------------------------------------------
+    // Expression is derived from state, never stored. One source of truth for
+    // "what is Cue feeling" — the same `state` that drives the motion above.
+    val lidClose = when (state) {
+        // Eyes squeeze shut on success, and reopen as the reaction settles.
+        is CueState.Correct, is CueState.LessonComplete -> bell(progress).coerceAtMost(1f)
+        // Thinking: half-lidded and looking away, the way anyone does while
+        // working something out.
+        is CueState.Thinking -> 0.35f
+        // Idle and Listening blink on the slow irregular rhythm.
+        else -> blinkAmount(breath)
     }
+
+    val gaze = when (state) {
+        is CueState.Thinking -> -0.9f + 0.5f * sin(breath * TAU * 0.5).toFloat()
+        is CueState.Listening -> 0.7f
+        is CueState.Incorrect -> sin(progress * TAU * 2).toFloat() * 0.5f
+        else -> 0f
+    }
+
+    val smile = when (state) {
+        is CueState.Correct, is CueState.LessonComplete, is CueState.Streak -> 1f
+        // Deliberately not negative. A frown on a wrong answer is a small
+        // punishment, repeated hundreds of times per course.
+        else -> 0.15f
+    }
+
+    drawRaccoon(
+        centre = core,
+        r = coreRadius * 1.34f,
+        tint = tint,
+        scaleX = scaleX,
+        scaleY = scaleY,
+        lidClose = lidClose,
+        gaze = gaze,
+        smile = smile,
+    )
 }
 
 /** Volume-preserving squash-stretch: stretch up first, then squash wide, then settle. */
@@ -264,9 +281,3 @@ private fun squashStretch(t: Float): Pair<Float, Float> {
 /** 0 -> 1 -> 0. The shape of every one-shot reaction in the app. */
 private fun bell(t: Float): Float = sin(t.coerceIn(0f, 1f) * PI).toFloat()
 
-private fun lerpColor(a: Color, b: Color, t: Float): Color = Color(
-    red = a.red + (b.red - a.red) * t,
-    green = a.green + (b.green - a.green) * t,
-    blue = a.blue + (b.blue - a.blue) * t,
-    alpha = a.alpha + (b.alpha - a.alpha) * t,
-)

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Curio — learn anything, one exercise at a time</title>
+<meta name="description" content="Type any topic. Get a structured, interactive course in under a minute. Curio turns what you want to learn into exercises you actually do — not walls of text.">
+<meta property="og:title" content="Curio — learn anything, one exercise at a time">
+<meta property="og:description" content="Type any topic. Get a structured, interactive course in under a minute.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦝</text></svg>">
+<style>
+  :root {
+    --surface: #FAF6F0;
+    --raised: #FFFDFA;
+    --outline: #E2D8CA;
+    --ink: #1F1B16;
+    --muted: #7A7066;
+    --accent: #D97534;
+    --accent-subtle: #FBEADC;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --surface: #16130F; --raised: #211D18; --outline: #3A332B;
+      --ink: #F2EBE1; --muted: #9C9186; --accent: #F08B45; --accent-subtle: #3A2618;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--surface);
+    color: var(--ink);
+    font-family: "Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 0 24px; }
+  h1, h2, h3 { font-family: Fraunces, Georgia, "Times New Roman", serif; font-weight: 500; letter-spacing: -0.02em; line-height: 1.15; }
+  h1 { font-size: clamp(2.2rem, 7vw, 3.4rem); margin: 0 0 16px; }
+  h2 { font-size: clamp(1.4rem, 4vw, 1.9rem); margin: 56px 0 12px; }
+  a { color: var(--accent); }
+
+  header { padding: 72px 0 8px; text-align: center; }
+  .lede { font-size: 1.15rem; color: var(--muted); max-width: 34rem; margin: 0 auto; }
+
+  .orb { width: 96px; height: 96px; margin: 0 auto 28px; display: block; }
+
+  .cta { display: inline-block; margin-top: 32px; padding: 14px 28px; border-radius: 999px;
+         background: var(--accent); color: #FFFDFA; text-decoration: none; font-weight: 600; }
+  .cta[aria-disabled="true"] { background: var(--accent-subtle); color: var(--muted); cursor: default; }
+  .note { font-size: .85rem; color: var(--muted); margin-top: 12px; }
+
+  .cards { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); margin-top: 24px; }
+  .card { background: var(--raised); border: 1px solid var(--outline); border-radius: 20px; padding: 20px; }
+  .card h3 { font-size: 1.05rem; margin: 0 0 6px; }
+  .card p { margin: 0; color: var(--muted); font-size: .95rem; }
+
+  ol.steps { padding-left: 1.2em; }
+  ol.steps li { margin-bottom: 10px; }
+
+  footer { margin-top: 88px; padding: 32px 0 56px; border-top: 1px solid var(--outline); text-align: center; color: var(--muted); font-size: .9rem; }
+  footer a { margin: 0 10px; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <!-- The mascot, matching the in-app Canvas drawing. -->
+    <svg class="orb" viewBox="0 0 100 100" aria-hidden="true">
+      <circle cx="26" cy="26" r="13" fill="#8D8B93"/><circle cx="26" cy="27" r="7" fill="#D97534" opacity=".55"/>
+      <circle cx="74" cy="26" r="13" fill="#8D8B93"/><circle cx="74" cy="27" r="7" fill="#D97534" opacity=".55"/>
+      <ellipse cx="50" cy="52" rx="34" ry="32" fill="#8D8B93"/>
+      <ellipse cx="50" cy="46" rx="7" ry="26" fill="#C9C6CE"/>
+      <ellipse cx="34" cy="45" rx="15" ry="11" fill="#32303A"/>
+      <ellipse cx="66" cy="45" rx="15" ry="11" fill="#32303A"/>
+      <circle cx="36" cy="46" r="5.5" fill="#F3F0EA"/><circle cx="36" cy="46" r="3.2" fill="#2A2830"/>
+      <circle cx="64" cy="46" r="5.5" fill="#F3F0EA"/><circle cx="64" cy="46" r="3.2" fill="#2A2830"/>
+      <ellipse cx="50" cy="68" rx="15" ry="11" fill="#F3F0EA"/>
+      <path d="M43 65 h14 a7 7 0 0 1 -14 0 z" fill="#2A2830"/>
+    </svg>
+
+    <h1>Learn anything,<br>one exercise at a time.</h1>
+    <p class="lede">
+      Type any topic. Curio builds you a structured course in under a minute —
+      made of things you <em>do</em>, not paragraphs you skim.
+    </p>
+
+    <a class="cta" href="#" aria-disabled="true">Coming soon to Google Play</a>
+    <p class="note">Android first. iOS shortly after.</p>
+  </header>
+
+  <h2>Why it's different</h2>
+  <div class="cards">
+    <div class="card">
+      <h3>Exercises, not text</h3>
+      <p>Every lesson is tap-to-fill, matching, ordering, sorting and explaining. Reading is not learning.</p>
+    </div>
+    <div class="card">
+      <h3>Any topic at all</h3>
+      <p>Compilers, crop rotation, the Treaty of Westphalia, your exam syllabus. If it can be taught, it can be a course.</p>
+    </div>
+    <div class="card">
+      <h3>Teach it back</h3>
+      <p>Every lesson ends by asking you to explain the idea in your own words — the only honest test of understanding.</p>
+    </div>
+    <div class="card">
+      <h3>Under a minute</h3>
+      <p>Type a topic, get a course. No browsing a catalogue hoping someone already made what you need.</p>
+    </div>
+  </div>
+
+  <h2>How it works</h2>
+  <ol class="steps">
+    <li><strong>Type what you want to learn.</strong> Anything. Three words is enough.</li>
+    <li><strong>Curio writes the course.</strong> It plans lessons, then fills each one with material tagged by what kind of idea it is — a definition, a sequence, a comparison.</li>
+    <li><strong>That shape picks the exercise.</strong> A sequence becomes a reordering task; a definition becomes matching pairs. The teaching format follows the content, instead of everything collapsing into multiple choice.</li>
+    <li><strong>You do the work.</strong> Tap, sort, arrange, explain. Then teach the idea back in your own words.</li>
+  </ol>
+
+  <h2>Free and premium</h2>
+  <p>
+    Curio is free to use: one course, three lessons a day, one new course a day.
+    Premium removes the daily limits and adds unlimited courses. Generating a
+    course costs real money to run, which is the honest reason the free tier has
+    a ceiling rather than an artificial one.
+  </p>
+
+  <footer>
+    <p>
+      <a href="./privacy.html">Privacy</a>·<a href="./terms.html">Terms</a>·<a href="mailto:nischay02sood@gmail.com">Contact</a>
+    </p>
+    <p>© 2026 Curio. Made in India.</p>
+  </footer>
+</div>
+
+</body>
+</html>

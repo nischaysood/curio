@@ -3,13 +3,29 @@ import { OUTLINE_SCHEMA, CHUNKS_SCHEMA, GRADE_SCHEMA } from './schema.js';
 import { outlinePrompt, chunksPrompt, gradePrompt } from './prompts.js';
 import { validateLesson } from './validate.js';
 import { generate as callModel, providerName } from './provider.js';
+import { hasDb } from './db.js';
+import { signup, login, userFromRequest, destroySession, looksLikeEmail } from './auth.js';
+import { listCourses, saveCourse, recordProgress, usage, canGenerate, countGeneration, profile } from './sync.js';
+import { tierOf } from './tier.js';
 
 /**
  * Curio's entire backend. Three endpoints, deliberately small.
  *
- *   POST /generate  { topic, depth }                  -> { topic, depth, lessons: [...] }
- *   POST /grade     { concept, rubric, answer }       -> { correct, feedback, missed }
+ *   POST /generate     { topic, depth }               -> { topic, depth, lessons: [...] }
+ *   POST /grade        { concept, rubric, answer }    -> { correct, feedback, missed }
  *   GET  /health
+ *
+ *   POST /auth/signup  { email, password }            -> { token, expiresAt }
+ *   POST /auth/login   { email, password }            -> { token, expiresAt }
+ *   POST /auth/logout                                 -> { ok }
+ *   GET  /me/courses                                  -> { courses: [...] }
+ *   POST /me/progress  { topicHash, lessonId, ... }   -> { state, usage }
+ *   GET  /me/usage                                    -> { lessons, generations }
+ *   GET  /me/profile                                  -> { email, courses, usage, ... }
+ *
+ * Everything under /auth and /me needs a database; everything above it doesn't.
+ * That split is deliberate — no DATABASE_URL means accounts are unavailable and
+ * generation still works, because generation is the product.
  *
  * The cache is the architecture. A course on Big-O is identical for every user:
  * the first person pays for generation, the next thousand are free. Marginal
@@ -39,13 +55,13 @@ export default {
         headers: {
           'access-control-allow-origin': '*',
           'access-control-allow-methods': 'POST, GET, OPTIONS',
-          'access-control-allow-headers': 'content-type',
+          'access-control-allow-headers': 'content-type, authorization',
         },
       });
     }
 
     if (url.pathname === '/health') {
-      return json({ ok: true, provider: safeProvider(env) });
+      return json({ ok: true, provider: safeProvider(env), accounts: hasDb(env) });
     }
 
     try {
@@ -54,6 +70,14 @@ export default {
       }
       if (url.pathname === '/grade' && request.method === 'POST') {
         return await handleGrade(request, env);
+      }
+
+      // --- accounts ---------------------------------------------------------
+      // Guarded as a group. Without a database these routes can't do anything
+      // useful, and a 503 that names the reason beats a stack trace.
+      if (url.pathname.startsWith('/auth/') || url.pathname.startsWith('/me/')) {
+        if (!hasDb(env)) return json({ error: 'accounts_unavailable' }, 503);
+        return await handleAccount(url, request, env);
       }
     } catch (err) {
       // The client falls back to bundled courses on any failure, so a 500 here
@@ -65,6 +89,79 @@ export default {
     return json({ error: 'not_found' }, 404);
   },
 };
+
+// ---------------------------------------------------------------------------
+// /auth/* and /me/*
+// ---------------------------------------------------------------------------
+
+async function handleAccount(url, request, env) {
+  const path = url.pathname;
+
+  // --- public ---------------------------------------------------------------
+
+  if (path === '/auth/signup' && request.method === 'POST') {
+    const { email, password } = await request.json();
+    const result = await signup(env, email, password);
+    // 409 for a taken address, 400 for malformed input. The client shows
+    // different copy for each, and "try logging in instead" is only right for one.
+    if (result.error) return json(result, result.error === 'email_taken' ? 409 : 400);
+    return json(result);
+  }
+
+  if (path === '/auth/login' && request.method === 'POST') {
+    const { email, password } = await request.json();
+    const result = await login(env, email, password);
+    // Deliberately vague: never reveal whether the address exists.
+    if (result.error) return json({ error: 'bad_credentials' }, 401);
+    return json(result);
+  }
+
+  if (path === '/auth/logout' && request.method === 'POST') {
+    await destroySession(env, request);
+    // Always ok. Logging out with a token that's already dead is a success from
+    // the user's point of view — they wanted to be logged out, and they are.
+    return json({ ok: true });
+  }
+
+  // --- authenticated --------------------------------------------------------
+
+  const userId = await userFromRequest(env, request);
+  if (!userId) return json({ error: 'unauthorized' }, 401);
+
+  if (path === '/me/courses' && request.method === 'GET') {
+    return json({ courses: await listCourses(env, userId) });
+  }
+
+  if (path === '/me/courses' && request.method === 'POST') {
+    const course = await request.json();
+    if (!course?.topicHash) return json({ error: 'bad_course' }, 400);
+    await saveCourse(env, userId, course);
+    return json({ ok: true });
+  }
+
+  if (path === '/me/progress' && request.method === 'POST') {
+    const { topicHash, lessonId, correct = 0, total = 0 } = await request.json();
+    if (!topicHash || !lessonId) return json({ error: 'bad_progress' }, 400);
+    const result = await recordProgress(env, userId, { topicHash, lessonId, correct, total });
+    // Return the fresh usage with it, so the app knows it has hit the daily
+    // limit without a second round trip on every completed lesson.
+    return json({ ...result, usage: await usage(env, userId) });
+  }
+
+  if (path === '/me/usage' && request.method === 'GET') {
+    return json(await usage(env, userId));
+  }
+
+  if (path === '/me/profile' && request.method === 'GET') {
+    const me = await profile(env, userId);
+    // A valid token whose user row is gone means the account was deleted while
+    // the session lived on. 401 tells the app to clear the token and show login,
+    // which is right; a 404 would leave it stuck holding a dead token.
+    return me ? json(me) : json({ error: 'unauthorized' }, 401)
+  }
+
+  return json({ error: 'not_found' }, 404);
+}
 
 // ---------------------------------------------------------------------------
 // /generate
@@ -83,13 +180,29 @@ async function handleGenerate(request, env, ctx) {
 
   const key = topicHash(topic, depth);
 
+  // Auth is optional here. Signed out, generation still works and simply isn't
+  // remembered — the app is usable before anyone has an account, which is what
+  // makes the first run good.
+  const userId = hasDb(env) ? await userFromRequest(env, request) : null;
+
   // --- cache ---------------------------------------------------------------
   const cached = await env.COURSES.get(key, 'json');
   if (cached) {
     // Request counts drive cache warming: the topics people actually ask for
     // are the ones worth pre-generating before launch.
     ctx.waitUntil(bumpCount(env, key));
+    // A cache hit costs nothing, so it never counts as a generation — but it
+    // does still attach the course to the account, so it shows up in history.
+    if (userId) ctx.waitUntil(saveCourse(env, userId, cached));
     return json({ ...cached, cached: true });
+  }
+
+  // --- limits --------------------------------------------------------------
+  // Checked before the model is called, not after. The whole point is to not
+  // spend the tokens.
+  if (userId) {
+    const verdict = await canGenerate(env, userId, await tierOf(userId, env));
+    if (!verdict.allowed) return json({ error: verdict.reason }, 402);
   }
 
   // --- stage 1: outline ----------------------------------------------------
@@ -136,6 +249,14 @@ async function handleGenerate(request, env, ctx) {
   ctx.waitUntil(
     env.COURSES.put(key, JSON.stringify(course), { expirationTtl: CACHE_TTL_SECONDS }),
   );
+
+  // Counted only now — after the model actually produced something. Charging
+  // someone a daily generation for a request that 502'd is the kind of thing
+  // people remember.
+  if (userId) {
+    ctx.waitUntil(countGeneration(env, userId));
+    ctx.waitUntil(saveCourse(env, userId, course));
+  }
 
   return json({ ...course, cached: false });
 }

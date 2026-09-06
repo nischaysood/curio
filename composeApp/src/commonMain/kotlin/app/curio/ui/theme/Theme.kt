@@ -22,6 +22,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import curio.composeapp.generated.resources.Res
+import curio.composeapp.generated.resources.fraunces_variable
+import curio.composeapp.generated.resources.inter_tight
+import org.jetbrains.compose.resources.Font
 
 /**
  * THE design system. Never hardcode a colour, size, duration or spring after this file.
@@ -119,24 +123,45 @@ private val DarkColors = CurioColors(
 /**
  * Type carries identity. One display face, one text face.
  *
- * These are still the SYSTEM faces, and that is why the app currently looks
- * generic — the system serif is the same one every unstyled Android app gets.
- * Swapping them is the largest single visual improvement available and it costs
- * about ten minutes:
+ * Fraunces for display — a warm, slightly odd serif that reads as "collected
+ * object" rather than ed-tech. Inter Tight for everything else, because it stays
+ * legible at 13sp on a small screen, which is where most of the app's words are.
  *
- *   1. Download two variable fonts (SIL Open Font License, safe to ship):
- *        display — Fraunces or Instrument Serif   fonts.google.com
- *        text    — Inter Tight or Figtree
- *   2. Drop the .ttf files in:
- *        composeApp/src/commonMain/composeResources/font/
- *   3. Replace the two values below with:
- *        FontFamily(Font(Res.font.fraunces_variable))
- *      importing curio.composeapp.generated.resources.Res
- *
- * Everything downstream reads from this file, so nothing else changes.
+ * Both ship under the SIL Open Font License, so they're safe to distribute
+ * commercially. The licence text lives in the download; keep a copy if you ever
+ * add an attributions screen.
  */
-private val DisplayFace = FontFamily.Serif
-private val TextFace = FontFamily.SansSerif
+
+/**
+ * System fallbacks.
+ *
+ * Compose Resources loads fonts asynchronously, so there is a frame — usually
+ * one — before the real faces are ready. These are what render during it, and
+ * what render if a font file is ever missing. Serif and sans-serif rather than
+ * a single default, so the display/text distinction survives the fallback and
+ * the layout doesn't reflow noticeably when the real fonts land.
+ */
+private val FallbackDisplay = FontFamily.Serif
+private val FallbackText = FontFamily.SansSerif
+
+/**
+ * The real faces.
+ *
+ * Both are variable fonts, so one file covers every weight — 400 and 500 here
+ * come from the same .ttf rather than two separate static files. That's roughly
+ * 900KB for the pair instead of ~2MB for the equivalent static set.
+ */
+private val DisplayFace: FontFamily
+    @Composable get() = FontFamily(
+        Font(Res.font.fraunces_variable, FontWeight.Normal),
+        Font(Res.font.fraunces_variable, FontWeight.Medium),
+    )
+
+private val TextFace: FontFamily
+    @Composable get() = FontFamily(
+        Font(Res.font.inter_tight, FontWeight.Normal),
+        Font(Res.font.inter_tight, FontWeight.Medium),
+    )
 
 @Immutable
 data class CurioTypography(
@@ -151,44 +176,51 @@ data class CurioTypography(
     val mono: TextStyle,
 )
 
-private val DefaultTypography = CurioTypography(
+/**
+ * Build the type scale against a given pair of faces.
+ *
+ * Parameterised rather than duplicated so the real fonts and the fallbacks can
+ * never drift apart in size, weight or leading — only the family changes, which
+ * is what keeps the swap from causing a visible reflow.
+ */
+private fun typographyWith(display: FontFamily, text: FontFamily) = CurioTypography(
     // 30/38 rather than 34/40: at 34sp a two-line serif heading crowds whatever
     // sits under it on a 5" screen, and the app's first screen is exactly that
     // case. Looser leading buys more than the extra 4sp of size did.
     display = TextStyle(
-        fontFamily = DisplayFace,
+        fontFamily = display,
         fontWeight = FontWeight.Normal,
         fontSize = 30.sp,
         lineHeight = 38.sp,
         letterSpacing = (-0.3).sp,
     ),
     title = TextStyle(
-        fontFamily = DisplayFace,
+        fontFamily = display,
         fontWeight = FontWeight.Medium,
         fontSize = 22.sp,
         lineHeight = 28.sp,
         letterSpacing = (-0.2).sp,
     ),
     prompt = TextStyle(
-        fontFamily = TextFace,
+        fontFamily = text,
         fontWeight = FontWeight.Medium,
         fontSize = 20.sp,
         lineHeight = 30.sp,
     ),
     body = TextStyle(
-        fontFamily = TextFace,
+        fontFamily = text,
         fontWeight = FontWeight.Normal,
         fontSize = 16.sp,
         lineHeight = 24.sp,
     ),
     tile = TextStyle(
-        fontFamily = TextFace,
+        fontFamily = text,
         fontWeight = FontWeight.Medium,
         fontSize = 16.sp,
         lineHeight = 20.sp,
     ),
     label = TextStyle(
-        fontFamily = TextFace,
+        fontFamily = text,
         fontWeight = FontWeight.Medium,
         fontSize = 13.sp,
         lineHeight = 16.sp,
@@ -269,8 +301,17 @@ data class CurioMotion(
 
 val LocalCurioColors: ProvidableCompositionLocal<CurioColors> =
     staticCompositionLocalOf { LightColors }
+/**
+ * The default here is the system-font scale, not the real one.
+ *
+ * `staticCompositionLocalOf` takes a plain lambda, which cannot call
+ * `@Composable` code — and loading a font resource is composable. CurioTheme
+ * overrides this with the real faces; this value only surfaces if something
+ * reads the local outside the theme, where the fallback is the right answer
+ * anyway.
+ */
 val LocalCurioTypography: ProvidableCompositionLocal<CurioTypography> =
-    staticCompositionLocalOf { DefaultTypography }
+    staticCompositionLocalOf { typographyWith(FallbackDisplay, FallbackText) }
 val LocalCurioSpacing: ProvidableCompositionLocal<CurioSpacing> =
     staticCompositionLocalOf { CurioSpacing() }
 val LocalCurioRadii: ProvidableCompositionLocal<CurioRadii> =
@@ -298,9 +339,15 @@ fun CurioTheme(
 ) {
     val colors = if (darkTheme) DarkColors else LightColors
 
+    // Built here, once, at the root. Font resources resolve in composable
+    // context, so this is the highest place it can happen — and doing it once
+    // means the whole tree shares one FontFamily instance rather than each
+    // Text() triggering its own resource lookup.
+    val typography = typographyWith(display = DisplayFace, text = TextFace)
+
     CompositionLocalProvider(
         LocalCurioColors provides colors,
-        LocalCurioTypography provides DefaultTypography,
+        LocalCurioTypography provides typography,
         LocalCurioSpacing provides CurioSpacing(),
         LocalCurioRadii provides CurioRadii(),
         LocalCurioMotion provides CurioMotion(),

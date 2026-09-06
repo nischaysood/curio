@@ -9,6 +9,19 @@ local.properties
 xcuserdata/
 *.hprof
 
+# Reinstallable from package-lock.json, and thousands of files. Committing it
+# makes every diff unreadable and every clone slow.
+node_modules/
+
+# Wrangler's local build and cache directory. Machine-specific, regenerated on
+# every dev run, and was committed by accident before this line existed.
+.wrangler/
+
+# macOS puts these next to real files on iCloud-synced folders and they break
+# tooling that globs directories.
+*\ [0-9].*
+Icon?
+
 # Never commit an API key. The Aug 15 paid key goes in local.properties,
 # which is gitignored above, and is read at build time.
 secrets.properties

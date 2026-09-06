@@ -1,24 +1,27 @@
 # Fonts
 
-Drop two .ttf files here, then update `DisplayFace` / `TextFace` in `ui/theme/Theme.kt`.
-
-| Role | Candidates | Why |
+| File | Family | Role |
 |---|---|---|
-| Display | Fraunces, Instrument Serif | Warm, slightly odd, reads as "collected object" not "ed-tech" |
-| Text | Inter Tight, Figtree | Neutral, tight, good at 13-20sp on small screens |
+| `fraunces_variable.ttf` | [Fraunces](https://fonts.google.com/specimen/Fraunces) | Display — headings, lesson titles |
+| `inter_tight.ttf` | [Inter Tight](https://fonts.google.com/specimen/Inter+Tight) | Text — prompts, body, tiles, labels |
 
-All are SIL Open Font License — free to ship commercially. Get them from
-fonts.google.com, take the variable .ttf, rename to lowercase with underscores
-(Compose Resources requires that): `fraunces_variable.ttf`, `inter_tight.ttf`.
+Both are variable fonts: one file covers every weight, so the pair costs roughly
+900KB instead of the ~2MB an equivalent set of static weights would.
 
-Then in Theme.kt:
+Both are licensed under the **SIL Open Font License 1.1**, which permits
+commercial distribution inside an app. The OFL text ships in each font's
+download — keep a copy if an attributions screen is ever added.
 
-    import curio.composeapp.generated.resources.Res
-    import curio.composeapp.generated.resources.fraunces_variable
-    import org.jetbrains.compose.resources.Font
+## Renaming matters
 
-    private val DisplayFace @Composable get() = FontFamily(Font(Res.font.fraunces_variable))
+Compose Resources generates Kotlin accessors from filenames, so files must be
+lowercase with underscores. The originals ship as
+`Fraunces-VariableFont_SOFT,WONK,opsz,wght.ttf` and
+`InterTight-VariableFont_wght.ttf` — capitals, hyphens, brackets and commas all
+break the generated `Res.font.*` names.
 
-Note the @Composable getter — Compose Resources fonts load asynchronously, so
-they cannot be top-level vals. CurioTypography will need to become a @Composable
-function rather than a val at the same time.
+## Wiring
+
+Read by `ui/theme/Theme.kt` via `Res.font.fraunces_variable` and
+`Res.font.inter_tight`. Nothing else references them: every screen goes through
+`CurioTheme.type`, so changing a face is a one-file edit.

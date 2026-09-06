@@ -35,6 +35,33 @@ interface Billing {
      * device shouldn't have to pay again.
      */
     suspend fun restore(): Tier
+
+    /**
+     * Bind purchases to a Curio account.
+     *
+     * Before this is called, a purchase belongs to an anonymous per-install id:
+     * it survives an app restart but not a new phone, and there is no way for
+     * the user to prove it was theirs. Calling this after sign-in merges the
+     * anonymous history into the account, and from then on Restore works from
+     * any device they log in on.
+     *
+     * The id passed is the Curio user id, which makes it the same identifier the
+     * server holds — so the Worker can ask RevenueCat about a user directly
+     * rather than trusting the app to declare its own tier.
+     *
+     * Returns the tier after the merge; logging in may itself grant premium if
+     * the account already had a subscription elsewhere.
+     */
+    suspend fun logIn(appUserId: String): Tier
+
+    /**
+     * Return to an anonymous id.
+     *
+     * Called on sign-out so the next person to use the device doesn't inherit
+     * the previous user's entitlements — which, on a shared or handed-down
+     * phone, would be giving away a subscription.
+     */
+    suspend fun logOut()
 }
 
 data class Product(

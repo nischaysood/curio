@@ -231,14 +231,16 @@ test('health check needs no key and reports the provider', async () => {
   // Must not throw when no key is configured — a health check that 500s because
   // of missing config tells you nothing about whether the Worker is alive.
   const none = await worker.fetch(new Request('https://x/health'), { COURSES: fakeKV() }, ctx);
-  assert.deepEqual(await none.json(), { ok: true, provider: 'none' });
+  // `accounts` reports whether a database is wired up. False here is correct
+  // and is not a failure: generation works without one.
+  assert.deepEqual(await none.json(), { ok: true, provider: 'none', accounts: false });
 
   const groq = await worker.fetch(
     new Request('https://x/health'),
     { COURSES: fakeKV(), GROQ_API_KEY: 'x' },
     ctx,
   );
-  assert.deepEqual(await groq.json(), { ok: true, provider: 'groq' });
+  assert.deepEqual(await groq.json(), { ok: true, provider: 'groq', accounts: false });
 });
 
 test('groq is preferred when both keys are present', async () => {

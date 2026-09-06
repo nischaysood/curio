@@ -11,6 +11,8 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getOfferingsWith
+import com.revenuecat.purchases.logInWith
+import com.revenuecat.purchases.logOutWith
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.purchaseWith
 import com.revenuecat.purchases.restorePurchasesWith
@@ -102,6 +104,36 @@ private class AndroidBilling(private val context: Context) : Billing {
         Purchases.sharedInstance.restorePurchasesWith(
             onError = { cont.resume(Tier.FREE) },
             onSuccess = { cont.resume(it.tier()) },
+        )
+    }
+
+    override suspend fun logIn(appUserId: String): Tier = suspendCoroutine { cont ->
+        if (!Purchases.isConfigured) {
+            cont.resume(Tier.FREE)
+            return@suspendCoroutine
+        }
+        Purchases.sharedInstance.logInWith(
+            appUserID = appUserId,
+            onError = {
+                // Identity is a nicety; a failure here must not block sign-in.
+                // The user stays on their anonymous id and Restore still works
+                // on this device.
+                cont.resume(Tier.FREE)
+            },
+            onSuccess = { info, _ -> cont.resume(info.tier()) },
+        )
+    }
+
+    override suspend fun logOut() = suspendCoroutine { cont ->
+        // logOut() throws if already anonymous, which is a normal state to be in
+        // — signing out twice, or signing out having never signed in.
+        if (!Purchases.isConfigured || Purchases.sharedInstance.isAnonymous) {
+            cont.resume(Unit)
+            return@suspendCoroutine
+        }
+        Purchases.sharedInstance.logOutWith(
+            onError = { cont.resume(Unit) },
+            onSuccess = { cont.resume(Unit) },
         )
     }
 }

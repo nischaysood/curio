@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -58,6 +60,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun GenerateScreen(
     onCourseReady: (Course) -> Unit,
+    onOpenProfile: () -> Unit,
     modifier: Modifier = Modifier,
     source: CourseSource = remember { CurioConfig.courseSource() },
 ) {
@@ -120,7 +123,17 @@ fun GenerateScreen(
             .padding(bottom = space.xl),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Box(Modifier.fillMaxWidth().height(140.dp), contentAlignment = Alignment.Center) {
+        // Profile sits top-right, over the Cue's row rather than above it, so the
+        // first screen keeps its single-focus feel — one field, one question —
+        // instead of growing a toolbar.
+        Row(
+            Modifier.fillMaxWidth().padding(top = space.sm),
+            horizontalArrangement = Arrangement.End,
+        ) {
+            ProfileButton(onTap = onOpenProfile)
+        }
+
+        Box(Modifier.fillMaxWidth().height(110.dp), contentAlignment = Alignment.Center) {
             // Cue fragments into particles while the course is being built. This
             // is the "no spinners anywhere" rule — the wait is shown by the
             // mascot doing something, not by a progress indicator.
@@ -204,6 +217,31 @@ fun GenerateScreen(
                 }
             }
         }
+    }
+}
+
+/**
+ * Entry to the profile.
+ *
+ * A raccoon head rather than a gear or an avatar: the mascot is already the
+ * app's most recognisable element, and reusing it means one fewer icon to draw
+ * and no ambiguity about what's behind it.
+ */
+@Composable
+private fun ProfileButton(onTap: () -> Unit) {
+    val interaction = remember { MutableInteractionSource() }
+    val shape = RoundedCornerShape(CurioTheme.radii.pill)
+
+    Box(
+        Modifier
+            .size(CurioTheme.space.touchTarget)
+            .clip(shape)
+            .background(CurioTheme.colors.surfaceRaised, shape)
+            .border(1.dp, CurioTheme.colors.outline, shape)
+            .tappable(interactionSource = interaction, onClick = onTap),
+        contentAlignment = Alignment.Center,
+    ) {
+        Cue(state = CueState.Idle, size = 26.dp)
     }
 }
 
