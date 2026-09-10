@@ -1,43 +1,46 @@
 package app.curio.auth
 
-import kotlinx.cinterop.ExperimentalForeignApi
-import platform.Foundation.NSUserDefaults
+import app.curio.platform.IosBridge
 
 /**
- * iOS token storage.
+ * iOS token storage — Keychain, via the Swift bridge.
  *
- * NSUserDefaults for now, not Keychain. Keychain is the correct home for a
- * credential and this should move there before the App Store build — the
- * cinterop for SecItemAdd/SecItemCopyMatching is fiddly and not worth blocking
- * the Android release on.
+ * The Keychain is the right home for a session token: encrypted at rest, gated
+ * by the device passcode, and excluded from unencrypted backups. NSUserDefaults,
+ * which this used to be, is none of those things.
  *
- * The practical difference: NSUserDefaults is cleared when the app is deleted
- * (Keychain survives), and it's included in unencrypted backups. For a
- * revocable 90-day session token that's a real but small exposure.
+ * The Security framework is reachable from Kotlin/Native, but only through
+ * hand-assembled CFDictionaries of pointer types — verbose, easy to get subtly
+ * wrong, and hard to read six months later. Thirty lines of Swift does the same
+ * job legibly, so that's where it lives. See [IosBridge].
  *
- * TODO(ios): move to Keychain before submitting to App Store review.
+ * Falls back to in-memory when Swift hasn't registered a store — which happens
+ * in tests and previews. Degrades to "log in again", never to a crash.
  */
-private const val KEY_TOKEN = "curio.session_token"
-private const val KEY_USER_ID = "curio.session_user_id"
+private const val KEY_TOKEN = "session_token"
+private const val KEY_USER_ID = "session_user_id"
 
-@OptIn(ExperimentalForeignApi::class)
-actual fun tokenStore(): TokenStore = IosTokenStore()
+private val fallback = InMemoryTokenStore()
 
-private class IosTokenStore : TokenStore {
-    private val defaults = NSUserDefaults.standardUserDefaults
+actual fun tokenStore(): TokenStore =
+    IosBridge.secureStore?.let(::KeychainTokenStore) ?: fallback
+
+private class KeychainTokenStore(
+    private val store: app.curio.platform.SecureStore,
+) : TokenStore {
 
     override fun read(): Session? {
-        val token = defaults.stringForKey(KEY_TOKEN)?.takeIf { it.isNotBlank() } ?: return null
-        return Session(token = token, userId = defaults.stringForKey(KEY_USER_ID).orEmpty())
+        val token = store.get(KEY_TOKEN)?.takeIf { it.isNotBlank() } ?: return null
+        return Session(token = token, userId = store.get(KEY_USER_ID).orEmpty())
     }
 
     override fun write(session: Session) {
-        defaults.setObject(session.token, KEY_TOKEN)
-        defaults.setObject(session.userId, KEY_USER_ID)
+        store.set(KEY_TOKEN, session.token)
+        store.set(KEY_USER_ID, session.userId)
     }
 
     override fun clear() {
-        defaults.removeObjectForKey(KEY_TOKEN)
-        defaults.removeObjectForKey(KEY_USER_ID)
+        store.remove(KEY_TOKEN)
+        store.remove(KEY_USER_ID)
     }
 }

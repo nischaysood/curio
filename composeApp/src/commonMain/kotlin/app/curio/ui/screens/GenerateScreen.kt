@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -24,6 +25,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,9 +37,12 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.curio.data.CourseCatalog
 import app.curio.data.CourseResult
+import app.curio.auth.CourseSummary
+import app.curio.auth.CurioApi
 import app.curio.data.CourseSource
 import app.curio.data.CurioConfig
 import app.curio.domain.Course
@@ -63,6 +68,7 @@ fun GenerateScreen(
     onOpenProfile: () -> Unit,
     modifier: Modifier = Modifier,
     source: CourseSource = remember { CurioConfig.courseSource() },
+    api: CurioApi = remember { CurioApi() },
 ) {
     val colors = CurioTheme.colors
     val space = CurioTheme.space
@@ -72,7 +78,13 @@ fun GenerateScreen(
     var depth by remember { mutableStateOf(Depth.STANDARD) }
     var error by remember { mutableStateOf<String?>(null) }
     var building by remember { mutableStateOf(false) }
+    var history by remember { mutableStateOf<List<CourseSummary>>(emptyList()) }
     val scope = rememberCoroutineScope()
+
+    // Loaded once per visit to this screen. Empty when signed out or offline,
+    // in which case the section simply isn't drawn — no spinner, no error for
+    // something the user didn't ask for.
+    LaunchedEffect(Unit) { history = api.courses() }
 
     val ready = topic.trim().length >= 3 && !building
 
@@ -197,8 +209,38 @@ fun GenerateScreen(
             onTap = ::submit,
         )
 
+        // --- history ----------------------------------------------------------
+        // The payoff for having an account. Without this, signing up changes
+        // nothing the user can see, which makes it feel like a data grab rather
+        // than a feature.
+        if (history.isNotEmpty()) {
+            Text(
+                text = "CONTINUE",
+                style = CurioTheme.type.label,
+                color = colors.onSurfaceMuted,
+                modifier = Modifier.fillMaxWidth().padding(top = space.xl, bottom = space.sm),
+            )
+
+            history.forEach { summary ->
+                CourseRow(
+                    topic = summary.topic,
+                    completed = summary.completed,
+                    onTap = {
+                        // Re-open through the normal generation path: the topic
+                        // hash is already in KV, so this is a cache hit and
+                        // returns in milliseconds rather than a regeneration.
+                        topic = summary.topic
+                        depth = runCatching { Depth.valueOf(summary.depth) }.getOrDefault(depth)
+                        haptics.play(Haptic.TAP)
+                        submit()
+                    },
+                )
+                Spacer(Modifier.height(space.sm))
+            }
+        }
+
         Text(
-            text = "OR START WITH",
+            text = if (history.isEmpty()) "OR START WITH" else "OR TRY",
             style = CurioTheme.type.label,
             color = colors.onSurfaceMuted,
             modifier = Modifier.fillMaxWidth().padding(top = space.xl, bottom = space.sm),
@@ -217,6 +259,47 @@ fun GenerateScreen(
                 }
             }
         }
+    }
+}
+
+/**
+ * One course in the history list.
+ *
+ * Shows the topic and how many lessons are done, and nothing else. A progress
+ * bar was tempting here and wrong: the row's job is to get you back into the
+ * course in one tap, and decoration competes with that.
+ */
+@Composable
+private fun CourseRow(topic: String, completed: Int, onTap: () -> Unit) {
+    val colors = CurioTheme.colors
+    val space = CurioTheme.space
+    val shape = RoundedCornerShape(CurioTheme.radii.card)
+    val interaction = remember { MutableInteractionSource() }
+
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(colors.surfaceRaised, shape)
+            .border(1.dp, colors.outline, shape)
+            .tappable(interactionSource = interaction, onClick = onTap)
+            .padding(space.md),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(
+            text = topic,
+            style = CurioTheme.type.tile,
+            color = colors.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f).padding(end = space.sm),
+        )
+        Text(
+            text = if (completed == 0) "Not started" else "$completed done",
+            style = CurioTheme.type.label,
+            color = if (completed == 0) colors.onSurfaceMuted else colors.accent,
+        )
     }
 }
 

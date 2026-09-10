@@ -121,6 +121,22 @@ class CurioApi(
     }
 
     /**
+     * Courses this user has started, newest first.
+     *
+     * Empty when signed out or unreachable — the home screen simply doesn't show
+     * the section, rather than showing an error for something the user didn't
+     * ask for.
+     */
+    suspend fun courses(): List<CourseSummary> {
+        val token = tokens.read()?.token ?: return emptyList()
+        return runCatching {
+            client.get("$baseUrl/me/courses") {
+                header("Authorization", "Bearer $token")
+            }.body<CoursesBody>().courses
+        }.getOrElse { emptyList() }
+    }
+
+    /**
      * Everything the profile screen shows, or null when signed out.
      *
      * Null is also what an unreachable server returns. The screen treats both
@@ -195,6 +211,28 @@ private data class ProgressBody(
 
 @Serializable
 data class UsageBody(val lessons: Int = 0, val generations: Int = 0)
+
+@Serializable
+private data class CoursesBody(val courses: List<CourseSummary> = emptyList())
+
+/**
+ * A course in the user's history, as the server sees it.
+ *
+ * Only what the home screen needs to draw a row. The full course — lessons,
+ * chunks, exercises — is fetched through the normal `/generate` path when the
+ * user taps it, which hits the KV cache and returns in milliseconds. Sending
+ * every course's full content just to list titles would be a slow screen.
+ */
+@Serializable
+data class CourseSummary(
+    val topic: String = "",
+    val topicHash: String = "",
+    val depth: String = "STANDARD",
+    /** lessonId -> state, for the ones that have been attempted. */
+    val progress: Map<String, String> = emptyMap(),
+) {
+    val completed: Int get() = progress.values.count { it == "COMPLETE" }
+}
 
 @Serializable
 data class ProfileBody(
